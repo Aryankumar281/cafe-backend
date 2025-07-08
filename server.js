@@ -13,6 +13,8 @@ mongoose.connect(db).then(() => {
   });
 });
 
-
+app.get("/",(req,res)=>{
+  res.send("server chla diya oye");
+})
 
 app.use("/api/users",Router)
