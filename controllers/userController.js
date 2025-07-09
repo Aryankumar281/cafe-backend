@@ -6,28 +6,62 @@ dotenv.config();
 const SECRET = process.env.SECRET;
 
 
-export const register = async (req, res) => {
+const profile = async (req, res) => {
   try {
-    const { firstname,lastname, email, password } = req.body;
-    if (!password || typeof password !== 'string') {
-      return res.status(400).json({ message: "Password is required and must be a string" });
-    }
-    const hashedpwd = await bcrypt.hash(password, 10);
-    const user = {
-      firstname,
-      lastname,
-      email,
-      password: hashedpwd,
-    };
-    const result = await userModel.create(user);
-    res.status(201).json(result);
+    const id = req.params.id;
+    const result = await userModel.findOne({ _id: id });
+    res.status(200).json(result);
   } catch (err) {
     console.log(err);
-    res.status(500).json({ message: "Something went wrong" });
+    res.status(400).json({ message: "Something went wrong" });
   }
-}
+};
+const deleteUser = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const result = await userModel.findByIdAndDelete(id);
+    res.status(200).json(result);
+  } catch (err) {
+    console.log(err);
+    res.status(400).json({ message: "Something went wrong" });
+  }
+};
+const updateUser = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const body = req.body;
+    if (body.password) {
+      body.password = await bcrypt.hash(body.password, 10);
+    }
+    const result = await userModel.findByIdAndUpdate(id, body);
+    res.status(200).json(result);
+  } catch (err) {
+    console.log(err);
+    res.status(400).json({ message: "Something went wrong" });
+  }
+};
+const showUsers = async (req, res) => {
+  try {
+    const result = await userModel.find();
+    res.status(200).json(result);
+  } catch (err) {
+    console.log(err);
+    res.status(400).json({ message: "Something went wrong" });
+  }
+};
 
-export const login = async (req, res) => {
+const getUser = async (req, res) => {
+  try {
+    const id = req.params.id
+    const result = await userModel.findOne({_id:id});
+    res.status(200).json(result);
+  } catch (err) {
+    console.log(err);
+    res.status(400).json({ message: "Something went wrong" });
+  }
+};
+
+const login = async (req, res) => {
   try {
     const { email, password } = req.body;
     const existingUser = await userModel.findOne({ email });
@@ -35,12 +69,12 @@ export const login = async (req, res) => {
       const isMatch = await bcrypt.compare(password, existingUser.password);
       if (isMatch) {
         const userObj = {
-          username: existingUser.username,
+          firstName: existingUser.firstName,
           email: existingUser.email,
           role: existingUser.role,
         };
         const token = jwt.sign(userObj, SECRET, { expiresIn: "1h" });
-        res.status(200).json({ user: userObj, token });
+        res.status(200).json({ ...userObj, token });
       } else {
         res.status(400).json({ message: "Invalid Password" });
       }
@@ -51,48 +85,51 @@ export const login = async (req, res) => {
     console.log(err);
     res.status(500).json({ message: "Something went wrong" });
   }
-}
-
-export const showUser = async (req, res) => {
+};
+const register = async (req, res) => {
   try {
-    const result = await userModel.find();
+    const { firstName, lastName, email, password } = req.body;
+    const hashedpwd = await bcrypt.hash(password, 10);
+    const user = {
+      firstName,
+      lastName,
+      email,
+      password: hashedpwd,
+    };
+    const result = await userModel.create(user);
+    res.status(201).json(result);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
+const updateProfile = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { firstName, lastName, email, password } = req.body;
+    const hashedpwd = await bcrypt.hash(password, 10);
+    const userObj = {
+      firstName,
+      lastName,
+      email,
+      password: hashedpwd,
+    };
+    const result = await userModel.findByIdAndUpdate(id, userObj);
     res.status(200).json(result);
-  } catch (err) {}
-}
+  } catch (err) {
+    console.log(err);
+    res.status(400).json({ message: "Something went wrong" });
+  }
+};
 
-export const patch = async(req, res)=>{
-    try {
-        const id = req.params.id;
-        const body = req.body;
-        const result = await userModel.findByIdAndUpdate(id, body);
-        res.status(200).json(result);
-    } catch (error) {
-        console.log(error);
-        res.status(400).json({ message: "Something went wrong" });
-    }
-}
-
-
-export const remove = async(req, res)=>{
-    try {
-        const id = req.params.id;
-        const result = await userModel.findByIdAndDelete(id);
-        res.status(200).json(result);
-    }catch(err){
-        console.log(err);
-        res.status(400).json({ message: "Something went wrong" });
-    }
-}
-
-export const profile = async(req, res)=>{
-    try {
-        const id = req.params.id;
-        const result = await userModel.findById(id);
-        res.status(200).json(result);
-    } catch (error) {
-        console.log(error)
-        res.status(400).json({
-            message: "User not found"
-        })
-    }
-}
+export {
+  register,
+  login,
+  showUsers,
+  deleteUser,
+  updateUser,
+  profile,
+  updateProfile,
+  getUser
+};
